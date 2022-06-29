@@ -15,6 +15,7 @@ unique => number of unique value
 top => value the most represented
 freq => frequency of top value
 */
+use std::collections::{HashSet, HashMap};
 
 #[derive(Debug)]
 pub struct Feature {
@@ -28,9 +29,8 @@ pub struct Feature {
     p50: Option<f32>,
     p75: Option<f32>,
     max: Option<f32>,
-    unique: Option<i32>,
-    top: Option<String>,
-    freq: Option<i32>,
+    unique: Option<usize>,
+    top: Option<(String, usize)>,
 }
 
 impl Feature {
@@ -54,7 +54,6 @@ impl Feature {
                         max: None,
                         unique: None,
                         top: None,
-                        freq: None
                     });
                 });
             },
@@ -87,6 +86,8 @@ impl Feature {
             x.p50 = x.calc_percentile(50.0);
             x.p75 = x.calc_percentile(75.0);
             x.max = x.calc_max();
+            x.unique = x.calc_unique();
+            x.top = x.calc_top();
         });
         Ok(ret)
     }
@@ -132,7 +133,7 @@ impl Feature {
         let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
         match new_values {
             Ok(all_values) => {
-                let mut ret = match all_values.get(1) {
+                let mut ret = match all_values.get(0) {
                     Some(value) => value,
                     _ => return None
                 };
@@ -151,7 +152,7 @@ impl Feature {
         let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
         match new_values {
             Ok(all_values) => {
-                let mut ret = match all_values.get(1) {
+                let mut ret = match all_values.get(0) {
                     Some(value) => value,
                     _ => return None
                 };
@@ -188,6 +189,9 @@ impl Feature {
                         }
                     }
                     _ => {
+                        if all_values.len() < 1 {
+                            return None
+                        }
                         let n1 = all_values.get(pos.trunc() as usize - 1);
                         let n2 = all_values.get(pos.trunc() as usize);
                         match n1 {
@@ -205,6 +209,67 @@ impl Feature {
                 }
             },
             Err(_) => None,
+        }
+    }
+
+    fn calc_unique(&self) -> Option<usize> {
+        match self.values.iter().any(|x| {
+            match x.parse::<f32>() {
+                Ok(value) => {
+                    if value.is_nan() == true {
+                        return false
+                    }
+                    true
+                },
+                _ => false
+            }
+        }) {
+        false => {
+            let mut unique_value = HashSet::new();
+            self.values.iter().for_each(|x| {
+                if unique_value.contains(&x) == false {
+                    unique_value.insert(x);
+                }
+            });
+            Some(unique_value.len())
+        },
+        _ => None
+        }
+    }
+
+    fn calc_top(&self) -> Option<(String, usize)> {
+        match self.values.iter().any(|x| {
+            match x.parse::<f32>() {
+                Ok(value) => {
+                    if value.is_nan() == true {
+                        return false
+                    }
+                    true
+                },
+                _ => false
+            }
+        }) {
+            false => {
+                let mut values_book = HashMap::new();
+                self.values.iter().for_each(|x| {
+                    if values_book.contains_key(&x) == false {
+                        values_book.insert(x, 1);
+                    } else {
+                        values_book.insert(x, values_book[x] + 1);
+                    }
+                });
+                if values_book.len() < 1 {
+                    return None
+                }
+                let mut ret: (String, usize) = ("Err".to_string(), 0);
+                values_book.iter().for_each(|(k, v)| {
+                    if v > &ret.1 {
+                        ret = (k.to_string(), *v);
+                    }
+                });
+                Some(ret)
+            },
+            _ => None
         }
     }
 
@@ -243,6 +308,14 @@ impl Feature {
 
     pub fn get_p75(&self) -> Option<f32> {
         self.p75
+    }
+
+    pub fn get_unique(&self) -> Option<usize> {
+        self.unique
+    }
+
+    pub fn get_top(&self) -> Option<(String, usize)> {
+        self.top.clone()
     }
 }
 

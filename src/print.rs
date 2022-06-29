@@ -53,6 +53,24 @@ fn common_print(features: &Vec<Feature>, feat: &str) {
                     None => print!("{:<30}", "/"),
                 }
             },
+            "unique" => {
+                match x.get_unique() {
+                    Some(value) => print!("{:<30}", value),
+                    None => print!("{:<30}", "/"),
+                }
+            },
+            "top" => {
+                match x.get_top() {
+                    Some(value) => print!("{:<30}", value.0),
+                    None => print!("{:<30}", "/"),
+                }
+            },
+            "freq" => {
+                match x.get_top() {
+                    Some(value) => print!("{:<30}", value.1),
+                    None => print!("{:<30}", "/"),
+                }
+            },
             _ => {
                 println!("unexpected error ! 'feat' doesn't exist");
                 unreachable!();
@@ -73,4 +91,7 @@ pub fn print_features(features: Vec<Feature>) {
     common_print(&features, "50%");
     common_print(&features, "75%");
     common_print(&features, "max");
+    common_print(&features, "unique");
+    common_print(&features, "top");
+    common_print(&features, "freq");
 }
