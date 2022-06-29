@@ -34,8 +34,8 @@ pub struct Feature {
 }
 
 impl Feature {
-    //create vec<Feature> from dataset file
-    pub fn new(contents: String) -> Result<Vec<Feature>, String> {
+    //create vec<Feature> from dataset file and init value
+    pub fn new_and_init(contents: String) -> Result<Vec<Feature>, String> {
         let mut ret: Vec<Feature> = Vec::default();
         let mut lines = contents.split('\n');
         match lines.next() {
@@ -82,6 +82,11 @@ impl Feature {
         ret.iter_mut().for_each(|x| {
             x.mean = x.calc_mean();
             x.std = x.calc_std();
+            x.min = x.calc_min();
+            x.p25 = x.calc_percentile(25.0);
+            x.p50 = x.calc_percentile(50.0);
+            x.p75 = x.calc_percentile(75.0);
+            x.max = x.calc_max();
         });
         Ok(ret)
     }
@@ -123,6 +128,86 @@ impl Feature {
         }
     }
 
+    fn calc_min(&self) -> Option<f32> {
+        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
+        match new_values {
+            Ok(all_values) => {
+                let mut ret = match all_values.get(1) {
+                    Some(value) => value,
+                    _ => return None
+                };
+                all_values.iter().for_each(|x| {
+                    if x < ret {
+                        ret = x;
+                    }
+                });
+                Some(*ret)
+            },
+            Err(_) => None,
+        }
+    }
+
+    fn calc_max(&self) -> Option<f32> {
+        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
+        match new_values {
+            Ok(all_values) => {
+                let mut ret = match all_values.get(1) {
+                    Some(value) => value,
+                    _ => return None
+                };
+                all_values.iter().for_each(|x| {
+                    if x > ret {
+                        ret = x;
+                    }
+                });
+                Some(*ret)
+            },
+            Err(_) => None,
+        }
+    }
+
+    fn calc_percentile(&self, percentile: f32) -> Option<f32> {
+        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
+        match new_values {
+            Ok(mut all_values) => {
+                all_values.sort_by(|a, b| {
+                    match a.partial_cmp(b) {
+                        Some(ord) => ord,
+                        _ => {
+                            println!("unexpected error when sort values");
+                            unreachable!();
+                        }
+                    }
+                });
+                let pos: f32 = percentile / 100.0 * (all_values.len() as f32 + 1.0);
+                match pos.fract() {
+                    0.0 => {
+                        match all_values.get(pos as usize - 1) {
+                            Some(value) => Some(*value),
+                            _ => None
+                        }
+                    }
+                    _ => {
+                        let n1 = all_values.get(pos.trunc() as usize - 1);
+                        let n2 = all_values.get(pos.trunc() as usize);
+                        match n1 {
+                            Some(nb1) => {
+                                match n2 {
+                                    Some(nb2) => {
+                                        Some((*nb1 + *nb2) / 2.0)
+                                    },
+                                    _ => None
+                                }
+                            },
+                            _ => None
+                        }
+                    }
+                }
+            },
+            Err(_) => None,
+        }
+    }
+
     //all get function
     pub fn get_name(&self) -> String {
         self.name.clone()
@@ -138,6 +223,26 @@ impl Feature {
 
     pub fn get_std(&self) -> Option<f32> {
         self.std
+    }
+
+    pub fn get_min(&self) -> Option<f32> {
+        self.min
+    }
+
+    pub fn get_max(&self) -> Option<f32> {
+        self.max
+    }
+
+    pub fn get_p25(&self) -> Option<f32> {
+        self.p25
+    }
+
+    pub fn get_p50(&self) -> Option<f32> {
+        self.p50
+    }
+
+    pub fn get_p75(&self) -> Option<f32> {
+        self.p75
     }
 }
 

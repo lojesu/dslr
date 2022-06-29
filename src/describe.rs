@@ -11,13 +11,13 @@ pub fn describe() {
             process::exit(1);
         }
     };
-    let mut features = match Feature::new(contents) {
+    let mut features = match Feature::new_and_init(contents) {
         Ok(all_features) => all_features,
         Err(e) => {
             println!("{e}");
             process::exit(1);
         }
     };
-    println!("{:?}", features);
+    //println!("{features:?}");
     print_features(features);
 }
