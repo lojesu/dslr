@@ -15,7 +15,7 @@ unique => number of unique value
 top => value the most represented
 freq => frequency of top value
 */
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct Feature {
@@ -38,43 +38,42 @@ impl Feature {
     pub fn new_and_init(contents: String) -> Result<Vec<Feature>, String> {
         let mut ret: Vec<Feature> = Vec::default();
         let mut lines = contents.split('\n');
-        match lines.next() {
-            Some(first_line) => {
-                first_line.split(',').for_each(|x| {
-                    ret.push(Feature {
-                        name: x.to_string(),
-                        values: Vec::default(),
-                        count: 0,
-                        mean: None,
-                        std: None,
-                        min: None,
-                        p25: None,
-                        p50: None,
-                        p75: None,
-                        max: None,
-                        unique: None,
-                        top: None,
-                    });
+
+        lines
+            .next()
+            .ok_or("no line in dataset")?
+            .split(',')
+            .for_each(|x| {
+                ret.push(Feature {
+                    name: x.to_string(),
+                    values: Vec::default(),
+                    count: 0,
+                    mean: None,
+                    std: None,
+                    min: None,
+                    p25: None,
+                    p50: None,
+                    p75: None,
+                    max: None,
+                    unique: None,
+                    top: None,
                 });
-            },
-            _ => return Err("no line in dataset".to_string())
-        }
+            });
+
+        let nb_lines = lines.clone().count();
         let mut i = 0;
-        let nb_lines = lines.clone().collect::<Vec<&str>>().len();
-        while i < nb_lines - 1 {
-            match lines.next() {
-                Some(line) => {
-                    for (j, r) in ret.iter_mut().enumerate() {
-                        let value_to_push: Vec<&str> = line.split(',').collect();
-                        if value_to_push[j].len() > 0 {
-                            r.values.push(value_to_push[j].to_string());
-                        }
-                        if i == nb_lines - 2 {
-                            r.count = r.values.len();
-                        }
+
+        while let Some(line) = lines.next() {
+            if i != nb_lines - 1 {
+                for (j, r) in ret.iter_mut().enumerate() {
+                    let value_to_push: Vec<&str> = line.split(',').collect();
+                    if value_to_push[j].len() > 0 {
+                        r.values.push(value_to_push[j].to_string());
                     }
-                },
-                _ => return Err("unexpected error in dataset".to_string()),
+                    if i == nb_lines - 2 {
+                        r.count = r.values.len();
+                    }
+                }
             }
             i += 1;
         }
@@ -99,12 +98,12 @@ impl Feature {
             Ok(all_values) => {
                 let len = all_values.len();
                 if len == 0 {
-                    return None
+                    return None;
                 }
                 let sum: f32 = all_values.iter().sum();
                 Some(sum / (len as f32))
-            },
-            Err(_) => None
+            }
+            Err(_) => None,
         }
     }
 
@@ -114,18 +113,21 @@ impl Feature {
             Ok(all_values) => {
                 let len = all_values.len();
                 if len == 0 {
-                    return None
+                    return None;
                 }
-                let all_gap_pow_add: f32 = all_values.iter().map(|x| {
-                    let gap = match self.get_mean() {
-                        Some(mean) => x - mean,
-                        _ => unreachable!(),
-                    };
-                    gap.powf(2.0)
-                }).sum();
+                let all_gap_pow_add: f32 = all_values
+                    .iter()
+                    .map(|x| {
+                        let gap = match self.get_mean() {
+                            Some(mean) => x - mean,
+                            _ => unreachable!(),
+                        };
+                        gap.powf(2.0)
+                    })
+                    .sum();
                 Some((all_gap_pow_add / (len as f32)).sqrt())
             }
-            Err(_) => None
+            Err(_) => None,
         }
     }
 
@@ -133,17 +135,11 @@ impl Feature {
         let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
         match new_values {
             Ok(all_values) => {
-                let mut ret = match all_values.get(0) {
-                    Some(value) => value,
-                    _ => return None
-                };
-                all_values.iter().for_each(|x| {
-                    if x < ret {
-                        ret = x;
-                    }
-                });
-                Some(*ret)
-            },
+                if all_values.len() == 0 {
+                    return None;
+                }
+                Some(all_values.iter().fold(f32::MAX, |acc, x| acc.min(*x)))
+            }
             Err(_) => None,
         }
     }
@@ -152,17 +148,11 @@ impl Feature {
         let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
         match new_values {
             Ok(all_values) => {
-                let mut ret = match all_values.get(0) {
-                    Some(value) => value,
-                    _ => return None
-                };
-                all_values.iter().for_each(|x| {
-                    if x > ret {
-                        ret = x;
-                    }
-                });
-                Some(*ret)
-            },
+                if all_values.len() == 0 {
+                    return None;
+                }
+                Some(all_values.iter().fold(f32::MIN, |acc, x| acc.max(*x)))
+            }
             Err(_) => None,
         }
     }
@@ -171,83 +161,64 @@ impl Feature {
         let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
         match new_values {
             Ok(mut all_values) => {
-                all_values.sort_by(|a, b| {
-                    match a.partial_cmp(b) {
-                        Some(ord) => ord,
-                        _ => {
-                            println!("unexpected error when sort values");
-                            unreachable!();
-                        }
+                all_values.sort_by(|a, b| match a.partial_cmp(b) {
+                    Some(ord) => ord,
+                    _ => {
+                        println!("unexpected error when sort values");
+                        unreachable!();
                     }
                 });
                 let pos: f32 = percentile / 100.0 * (all_values.len() as f32 + 1.0);
                 match pos.fract() {
-                    0.0 => {
-                        match all_values.get(pos as usize - 1) {
-                            Some(value) => Some(*value),
-                            _ => None
-                        }
-                    }
+                    0.0 => match all_values.get(pos as usize - 1) {
+                        Some(value) => Some(*value),
+                        _ => None,
+                    },
                     _ => {
                         if all_values.len() < 1 {
-                            return None
+                            return None;
                         }
                         let n1 = all_values.get(pos.trunc() as usize - 1);
                         let n2 = all_values.get(pos.trunc() as usize);
                         match n1 {
-                            Some(nb1) => {
-                                match n2 {
-                                    Some(nb2) => {
-                                        Some((*nb1 + *nb2) / 2.0)
-                                    },
-                                    _ => None
-                                }
+                            Some(nb1) => match n2 {
+                                Some(nb2) => Some((*nb1 + *nb2) / 2.0),
+                                _ => None,
                             },
-                            _ => None
+                            _ => None,
                         }
                     }
                 }
-            },
+            }
             Err(_) => None,
         }
     }
 
     fn calc_unique(&self) -> Option<usize> {
-        match self.values.iter().any(|x| {
-            match x.parse::<f32>() {
-                Ok(value) => {
-                    if value.is_nan() == true {
-                        return false
-                    }
-                    true
-                },
-                _ => false
-            }
-        }) {
-        false => {
-            let mut unique_value = HashSet::new();
-            self.values.iter().for_each(|x| {
-                if unique_value.contains(&x) == false {
-                    unique_value.insert(x);
+        match self.values.iter().any(|x| match x.parse::<f32>() {
+            Ok(value) => {
+                if value.is_nan() == true {
+                    return false;
                 }
-            });
-            Some(unique_value.len())
-        },
-        _ => None
+                true
+            }
+            _ => false,
+        }) {
+            false => {
+                let mut unique_value = HashSet::new();
+                self.values.iter().for_each(|x| {
+                    unique_value.insert(x);
+                });
+                Some(unique_value.len())
+            }
+            _ => None,
         }
     }
 
     fn calc_top(&self) -> Option<(String, usize)> {
-        match self.values.iter().any(|x| {
-            match x.parse::<f32>() {
-                Ok(value) => {
-                    if value.is_nan() == true {
-                        return false
-                    }
-                    true
-                },
-                _ => false
-            }
+        match self.values.iter().any(|x| match x.parse::<f32>() {
+            Ok(value) => !value.is_nan(),
+            _ => false,
         }) {
             false => {
                 let mut values_book = HashMap::new();
@@ -259,17 +230,21 @@ impl Feature {
                     }
                 });
                 if values_book.len() < 1 {
-                    return None
+                    return None;
                 }
-                let mut ret: (String, usize) = ("Err".to_string(), 0);
-                values_book.iter().for_each(|(k, v)| {
-                    if v > &ret.1 {
-                        ret = (k.to_string(), *v);
-                    }
-                });
-                Some(ret)
-            },
-            _ => None
+                Some(
+                    values_book
+                        .iter()
+                        .fold(("Err".to_string(), 0), |acc, (k, v)| {
+                            if v > &acc.1 {
+                                (k.to_string(), *v)
+                            } else {
+                                acc
+                            }
+                        }),
+                )
+            }
+            _ => None,
         }
     }
 
@@ -318,4 +293,3 @@ impl Feature {
         self.top.clone()
     }
 }
-
