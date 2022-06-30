@@ -184,7 +184,7 @@ impl Feature {
                 });
                 let pos: f32 = percentile / 100.0 * (all_values.len() as f32 + 1.0);
                 match pos.fract() {
-                    0.0 => {
+                    x if x == 0.0 => {
                         match all_values.get(pos as usize - 1) {
                             Some(value) => Some(*value),
                             _ => None

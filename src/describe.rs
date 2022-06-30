@@ -11,7 +11,7 @@ pub fn describe() -> Vec<Feature> {
             process::exit(1);
         }
     };
-    let mut features = match Feature::new_and_init(contents) {
+    let features = match Feature::new_and_init(contents) {
         Ok(all_features) => all_features,
         Err(e) => {
             println!("{e}");
