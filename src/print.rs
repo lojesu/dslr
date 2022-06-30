@@ -81,17 +81,17 @@ fn common_print(features: &Vec<Feature>, feat: &str) {
 }
 
 //commandor print function for describe
-pub fn print_features(features: Vec<Feature>) {
-    common_print(&features, "name");
-    common_print(&features, "count");
-    common_print(&features, "mean");
-    common_print(&features, "std");
-    common_print(&features, "min");
-    common_print(&features, "25%");
-    common_print(&features, "50%");
-    common_print(&features, "75%");
-    common_print(&features, "max");
-    common_print(&features, "unique");
-    common_print(&features, "top");
-    common_print(&features, "freq");
+pub fn print_features(features: &Vec<Feature>) {
+    common_print(features, "name");
+    common_print(features, "count");
+    common_print(features, "mean");
+    common_print(features, "std");
+    common_print(features, "min");
+    common_print(features, "25%");
+    common_print(features, "50%");
+    common_print(features, "75%");
+    common_print(features, "max");
+    common_print(features, "unique");
+    common_print(features, "top");
+    common_print(features, "freq");
 }

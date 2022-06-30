@@ -2,7 +2,7 @@ use std::{env, fs, process};
 use crate::print::print_features;
 use crate::feature::Feature;
 
-pub fn describe() {
+pub fn describe() -> Vec<Feature> {
     let args: Vec<String> = env::args().collect();
     let contents = match fs::read_to_string(args[1].clone()) {
         Ok(x) => x,
@@ -19,5 +19,6 @@ pub fn describe() {
         }
     };
     //println!("{features:?}");
-    print_features(features);
+    print_features(&features);
+    features
 }

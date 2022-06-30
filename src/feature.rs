@@ -17,7 +17,7 @@ freq => frequency of top value
 */
 use std::collections::{HashSet, HashMap};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Feature {
     name: String,
     values: Vec<String>,
@@ -38,29 +38,31 @@ impl Feature {
     pub fn new_and_init(contents: String) -> Result<Vec<Feature>, String> {
         let mut ret: Vec<Feature> = Vec::default();
         let mut lines = contents.split('\n');
-        match lines.next() {
-            Some(first_line) => {
-                first_line.split(',').for_each(|x| {
-                    ret.push(Feature {
-                        name: x.to_string(),
-                        values: Vec::default(),
-                        count: 0,
-                        mean: None,
-                        std: None,
-                        min: None,
-                        p25: None,
-                        p50: None,
-                        p75: None,
-                        max: None,
-                        unique: None,
-                        top: None,
-                    });
+            lines
+                .next()
+                .ok_or("no line in dataset".to_string())?
+                .split(',')
+                .for_each(|x| {
+                ret.push(Feature {
+                    name: x.to_string(),
+                    values: Vec::default(),
+                    count: 0,
+                    mean: None,
+                    std: None,
+                    min: None,
+                    p25: None,
+                    p50: None,
+                    p75: None,
+                    max: None,
+                    unique: None,
+                    top: None,
                 });
-            },
-            _ => return Err("no line in dataset".to_string())
-        }
+            });
         let mut i = 0;
-        let nb_lines = lines.clone().collect::<Vec<&str>>().len();
+        let nb_lines = lines.clone().count();
+        if nb_lines < 1 {
+            return Err("no line in dataset".to_string())
+        }
         while i < nb_lines - 1 {
             match lines.next() {
                 Some(line) => {
@@ -227,9 +229,7 @@ impl Feature {
         false => {
             let mut unique_value = HashSet::new();
             self.values.iter().for_each(|x| {
-                if unique_value.contains(&x) == false {
-                    unique_value.insert(x);
-                }
+                unique_value.insert(x);
             });
             Some(unique_value.len())
         },
@@ -276,6 +276,10 @@ impl Feature {
     //all get function
     pub fn get_name(&self) -> String {
         self.name.clone()
+    }
+
+    pub fn get_values(&self) -> Vec<String> {
+        self.values.clone()
     }
 
     pub fn get_count(&self) -> usize {
