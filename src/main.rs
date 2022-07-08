@@ -33,7 +33,11 @@ fn main() {
 
     // pair plot part
     let mut pair_plot_features = Vec::new();
-    features.iter().enumerate().for_each(|(i, x)| {
+    let mut houses: Vec<String> = Vec::new();
+    features.iter().for_each(|x| {
+        if x.get_name() == "Hogwarts House" {
+            houses = x.get_values();
+        }
         match x.get_std() {
             Some(_) => {
                  pair_plot_features.push(x.clone());
@@ -41,5 +45,6 @@ fn main() {
             _ => ()
         }
     });
-    pair_plot(pair_plot_features);
+    let houses: Vec<&str> = houses.iter().map(|x| x as &str).collect();
+    pair_plot(pair_plot_features, houses);
 }
