@@ -59,6 +59,7 @@ impl Feature {
                 });
             });
         let mut i = 0;
+        let mut void_nb = vec![0; ret.len()];
         let nb_lines = lines.clone().count();
         if nb_lines < 1 {
             return Err("no line in dataset".to_string())
@@ -68,11 +69,12 @@ impl Feature {
                 Some(line) => {
                     for (j, r) in ret.iter_mut().enumerate() {
                         let value_to_push: Vec<&str> = line.split(',').collect();
-                        if value_to_push[j].len() > 0 {
-                            r.values.push(value_to_push[j].to_string());
+                        if value_to_push[j].len() == 0 {
+                            void_nb[j] += 1;
                         }
+                        r.values.push(value_to_push[j].to_string());
                         if i == nb_lines - 2 {
-                            r.count = r.values.len();
+                            r.count = r.values.len() - void_nb[j];
                         }
                     }
                 },
@@ -96,121 +98,110 @@ impl Feature {
 
     // all calculate function
     fn calc_mean(&self) -> Option<f32> {
-        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
-        match new_values {
-            Ok(all_values) => {
-                let len = all_values.len();
-                if len == 0 {
-                    return None
-                }
-                let sum: f32 = all_values.iter().sum();
-                Some(sum / (len as f32))
-            },
-            Err(_) => None
+        let new_values: Vec<f32> = self.get_values().iter().flat_map(|x| x.parse()).collect();
+        let len = new_values.len();
+        let sum: f32 = new_values.iter().sum();
+        if sum.is_nan() == true || len == 0 {
+            return None
         }
+        Some(sum / (len as f32))
     }
 
     fn calc_std(&self) -> Option<f32> {
-        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
-        match new_values {
-            Ok(all_values) => {
-                let len = all_values.len();
-                if len == 0 {
-                    return None
-                }
-                let all_gap_pow_add: f32 = all_values.iter().map(|x| {
-                    let gap = match self.get_mean() {
-                        Some(mean) => x - mean,
-                        _ => unreachable!(),
-                    };
-                    gap.powf(2.0)
-                }).sum();
-                Some((all_gap_pow_add / (len as f32)).sqrt())
-            }
-            Err(_) => None
+        let new_values: Vec<f32> = self.get_values().iter().flat_map(|x| x.parse()).collect();
+        let len = new_values.len();
+        if self.get_mean() == None || len == 0 {
+            return None
         }
+        let all_gap_pow_add: f32 = new_values.iter().map(|x| {
+            let gap = match self.get_mean() {
+                Some(mean) => x - mean,
+                _ => unreachable!(),
+            };
+            gap.powf(2.0)
+        }).sum();
+        if all_gap_pow_add.is_nan() == true {
+            return None 
+        }
+        Some((all_gap_pow_add / (len as f32)).sqrt())
     }
 
     fn calc_min(&self) -> Option<f32> {
-        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
-        match new_values {
-            Ok(all_values) => {
-                let mut ret = match all_values.get(0) {
-                    Some(value) => value,
-                    _ => return None
-                };
-                all_values.iter().for_each(|x| {
-                    if x < ret {
-                        ret = x;
-                    }
-                });
-                Some(*ret)
-            },
-            Err(_) => None,
+        let new_values: Vec<f32> = self.get_values().iter().flat_map(|x| x.parse()).collect();
+        let mut ret = match new_values.get(0) {
+            Some(value) => value,
+            _ => return None
+        };
+        new_values.iter().for_each(|x| {
+            if x < ret {
+                ret = x;
+            }
+        });
+        if ret.is_nan() == true {
+            return None
         }
+        Some(*ret)
     }
 
     fn calc_max(&self) -> Option<f32> {
-        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
-        match new_values {
-            Ok(all_values) => {
-                let mut ret = match all_values.get(0) {
-                    Some(value) => value,
-                    _ => return None
-                };
-                all_values.iter().for_each(|x| {
-                    if x > ret {
-                        ret = x;
-                    }
-                });
-                Some(*ret)
-            },
-            Err(_) => None,
+        let new_values: Vec<f32> = self.get_values().iter().flat_map(|x| x.parse()).collect();
+        let mut ret = match new_values.get(0) {
+            Some(value) => value,
+            _ => return None
+        };
+        new_values.iter().for_each(|x| {
+            if x > ret {
+                ret = x;
+            }
+        });
+        if ret.is_nan() == true {
+            return None
         }
+        Some(*ret)
     }
 
     fn calc_percentile(&self, percentile: f32) -> Option<f32> {
-        let new_values: Result<Vec<f32>, _> = self.values.iter().map(|x| x.parse()).collect();
-        match new_values {
-            Ok(mut all_values) => {
-                all_values.sort_by(|a, b| {
-                    match a.partial_cmp(b) {
-                        Some(ord) => ord,
-                        _ => {
-                            println!("unexpected error when sort values");
-                            unreachable!();
-                        }
-                    }
-                });
-                let pos: f32 = percentile / 100.0 * (all_values.len() as f32 + 1.0);
-                match pos.fract() {
-                    x if x == 0.0 => {
-                        match all_values.get(pos as usize - 1) {
-                            Some(value) => Some(*value),
-                            _ => None
-                        }
-                    }
-                    _ => {
-                        if all_values.len() < 1 {
+        let mut new_values: Vec<f32> = self.get_values().iter().flat_map(|x| x.parse()).collect();
+        new_values.sort_by(|a, b| {
+            match a.partial_cmp(b) {
+                Some(ord) => ord,
+                _ => {
+                    println!("unexpected error when sort values");
+                    unreachable!();
+                }
+            }
+        });
+        let pos: f32 = percentile / 100.0 * (new_values.len() as f32 + 1.0);
+        match pos.fract() {
+            x if x == 0.0 => {
+                match new_values.get(pos as usize - 1) {
+                    Some(value) => {
+                        if value.is_nan() == true {
                             return None
                         }
-                        let n1 = all_values.get(pos.trunc() as usize - 1);
-                        let n2 = all_values.get(pos.trunc() as usize);
-                        match n1 {
-                            Some(nb1) => {
-                                match n2 {
-                                    Some(nb2) => {
-                                        Some((*nb1 + *nb2) / 2.0)
-                                    },
-                                    _ => None
-                                }
+                        Some(*value)
+                    },
+                    _ => None
+                }
+            }
+            _ => {
+                if new_values.len() < 1 || pos.trunc() < 1.0 {
+                    return None
+                }
+                let n1 = new_values.get(pos.trunc() as usize - 1);
+                let n2 = new_values.get(pos.trunc() as usize);
+                match n1 {
+                    Some(nb1) => {
+                        match n2 {
+                            Some(nb2) => {
+                                Some((*nb1 + *nb2) / 2.0)
                             },
                             _ => None
                         }
-                    }
+                    },
+                    _ => None
                 }
-            },
-            Err(_) => None,
+            }
         }
     }
 

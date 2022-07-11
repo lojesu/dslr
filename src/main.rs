@@ -40,7 +40,9 @@ fn main() {
         }
         match x.get_std() {
             Some(_) => {
-                 pair_plot_features.push(x.clone());
+                if x.get_name() != "Index" {
+                    pair_plot_features.push(x.clone());
+                }
             },
             _ => ()
         }
