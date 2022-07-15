@@ -12,11 +12,14 @@ fn main() {
     let features = describe();
     // histogram part
     let mut feature_std_min = features.get(0).unwrap();
-    let mut all_std: Vec<f32> = Vec::new();
+    let mut all_rsd: Vec<f32> = Vec::new();
     features.iter().for_each(|x| {
         match x.get_std() {
             Some(x_std) => {
-                all_std.push(x_std);
+                match x.get_mean() {
+                    Some(x_mean) => all_rsd.push(x_std / x_mean.abs() * 100.0),
+                    _ => ()
+                };
                 match feature_std_min.get_std() {
                     Some(stdmin_std) => {
                         if x_std < stdmin_std {
@@ -29,7 +32,7 @@ fn main() {
             _ => ()
         }
     });
-    histogram(feature_std_min.clone(), all_std);
+    histogram(feature_std_min.clone(), all_rsd);
 
     // pair plot part
     let mut pair_plot_features = Vec::new();

@@ -1,97 +1,70 @@
 use crate::feature::Feature;
 use colored::Colorize;
 
-fn common_print(features: &Vec<Feature>, feat: &str) {
-    print!("{:<10}", feat.yellow());
+pub fn print_features(features: &Vec<Feature>) {
+    println!("{:<32}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}{:<15}",
+        "name".blue().bold(),
+        "count".blue().bold(),
+        "mean".blue().bold(),
+        "std".blue().bold(),
+        "min".blue().bold(),
+        "max".blue().bold(),
+        "p25".blue().bold(),
+        "p50".blue().bold(),
+        "p75".blue().bold(),
+        "unique".blue().bold(),
+        "top".blue().bold(),
+        "freq".blue().bold(),
+    );
     features.iter().for_each(|x| {
-        match feat {
-            "name" => {
-                print!("{:<30}", x.get_name());
-            },
-            "count" => {
-                print!("{:<30}", x.get_count());
-            },
-            "mean" => {
-                match x.get_mean() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "std" => {
-                match x.get_std() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "min" => {
-                match x.get_min() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "25%" => {
-                match x.get_p25() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "50%" => {
-                match x.get_p50() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "75%" => {
-                match x.get_p75() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "max" => {
-                match x.get_max() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "unique" => {
-                match x.get_unique() {
-                    Some(value) => print!("{:<30}", value),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "top" => {
-                match x.get_top() {
-                    Some(value) => print!("{:<30}", value.0),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            "freq" => {
-                match x.get_top() {
-                    Some(value) => print!("{:<30}", value.1),
-                    None => print!("{:<30}", "/"),
-                }
-            },
-            _ => {
-                println!("unexpected error ! 'feat' doesn't exist");
-                unreachable!();
-            }
-        }
+        print_line(x.clone());
     });
-    print!("\n");
 }
 
-//commandor print function for describe
-pub fn print_features(features: &Vec<Feature>) {
-    common_print(features, "name");
-    common_print(features, "count");
-    common_print(features, "mean");
-    common_print(features, "std");
-    common_print(features, "min");
-    common_print(features, "25%");
-    common_print(features, "50%");
-    common_print(features, "75%");
-    common_print(features, "max");
-    common_print(features, "unique");
-    common_print(features, "top");
-    common_print(features, "freq");
+fn print_line(feat: Feature) {
+    print!("{:<32}", feat.get_name().blue().bold());
+    print!("{:<15}", feat.get_count());
+    match feat.get_mean() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_std() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_min() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_max() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_p25() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_p50() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_p75() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_unique() {
+        Some(value) => print!("{:<15}", value),
+        _ => print!("{:<15}", "/".dimmed()),
+    }
+    match feat.get_top() {
+        Some(value) => {
+            print!("{:<15}", value.0);
+            print!("{:<15}", value.1);
+        },
+        _ => {
+            print!("{:<15}", "/".dimmed());
+            print!("{:<15}", "/".dimmed());
+        }
+    }
+    print!("\n");
 }
