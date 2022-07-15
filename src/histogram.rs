@@ -1,10 +1,14 @@
 use plotters::prelude::*;
 use crate::feature::Feature;
 
-pub fn histogram(feature: Feature, all_rsd: Vec<f32>) {
+pub fn histogram(features: Vec<Feature>, all_rsd: Vec<f32>) {
     let root = BitMapBackend::new("graphics/histogram.png", (640, 480)).into_drawing_area();
         root.fill(&WHITE).unwrap();
 
+    let mut names: Vec<String> = Vec::new();
+    features.iter().for_each(|x| {
+        names.push(x.get_name());
+    });
     let mut ctx = ChartBuilder::on(&root)
         .set_label_area_size(LabelAreaPosition::Left, 30)
         .set_label_area_size(LabelAreaPosition::Right, 30)
@@ -16,7 +20,7 @@ pub fn histogram(feature: Feature, all_rsd: Vec<f32>) {
     
     ctx.draw_series((0..).zip(all_rsd.iter()).map(|(x, y)| {
         let mut bar = Rectangle::new([(x, 0), (x, *y as i32)], RED.filled());
-        bar.set_margin(0, 0, 5, 5);
+        bar.set_margin(0, 0, 2, 2);
         bar
     }))
     .unwrap();
