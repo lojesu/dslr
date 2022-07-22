@@ -5,6 +5,22 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "describe"
+path = "src/describe.rs"
+
+[[bin]]
+name = "histogram"
+path = "src/histogram.rs"
+
+[[bin]]
+name = "scatter_plot"
+path = "src/scatter_plot.rs"
+
+[[bin]]
+name = "pair_plot"
+path = "src/pair_plot.rs"
+
 [dependencies]
 colored = "2"
 plotters = "0.3"

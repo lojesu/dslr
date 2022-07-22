@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /*
 name => name of this feature
 values => all values of this feature
