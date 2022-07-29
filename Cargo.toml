@@ -21,6 +21,10 @@ path = "src/scatter_plot.rs"
 name = "pair_plot"
 path = "src/pair_plot.rs"
 
+[[bin]]
+name = "logreg_predict"
+path = "src/logreg_predict.rs"
+
 [dependencies]
 colored = "2"
 plotters = "0.3"
